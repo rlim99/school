@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>今日茶飲推薦</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 32px 16px;
+      background: linear-gradient(135deg, #fdfbf7 0%, #f3e7e9 50%, #e3eeff 100%);
+      color: #2c3e35;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+                   "Noto Sans TC", sans-serif;
+      min-height: 100vh;
+    }
+
+    main {
+      max-width: 820px;
+      margin: 0 auto;
+    }
+
+    .panel {
+      padding: 36px 28px;
+      background: rgba(255, 255, 255, 0.98);
+      border-radius: 28px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.8);
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      background: linear-gradient(135deg, #2e5a3c, #1d4ed8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-size: clamp(2rem, 5vw, 2.6rem);
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+
+    .intro {
+      color: #5c6b61;
+      line-height: 1.7;
+      margin-bottom: 28px;
+      font-size: 1.05rem;
+    }
+
+    label {
+      display: block;
+      margin: 24px 0 14px;
+      font-weight: 700;
+      color: #2c3e50;
+      font-size: 1.1rem;
+    }
+
+    /* 雙向動態飄浮按鈕區域 (上下左右移動) */
+    .mood-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 28px;
+      padding: 12px 10px;
+    }
+
+    .mood-btn {
+      padding: 14px 22px;
+      border: 2px solid transparent;
+      border-radius: 50px;
+      font: inherit;
+      font-size: 0.98rem;
+      font-weight: 600;
+      cursor: pointer;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      transition: background 0.3s, color 0.3s, border-color 0.3s, box-shadow 0.3s;
+      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.06);
+    }
+
+    /* 各別按鈕設定不同方向與速度的上下左右飄浮動畫 */
+    .mood-btn:nth-child(1) { animation: float2D1 4s ease-in-out infinite; }
+    .mood-btn:nth-child(2) { animation: float2D2 3.6s ease-in-out infinite 0.5s; }
+    .mood-btn:nth-child(3) { animation: float2D3 4.2s ease-in-out infinite 1s; }
+    .mood-btn:nth-child(4) { animation: float2D4 3.8s ease-in-out infinite 1.5s; }
+    .mood-btn:nth-child(5) { animation: float2D5 4.5s ease-in-out infinite 0.2s; }
+
+    @keyframes float2D1 {
+      0%, 100% { transform: translate(0px, 0px); }
+      25%      { transform: translate(5px, -8px); }
+      50%      { transform: translate(-4px, -4px); }
+      75%      { transform: translate(-6px, 6px); }
+    }
+
+    @keyframes float2D2 {
+      0%, 100% { transform: translate(0px, 0px); }
+      25%      { transform: translate(-6px, -6px); }
+      50%      { transform: translate(4px, -10px); }
+      75%      { transform: translate(6px, 4px); }
+    }
+
+    @keyframes float2D3 {
+      0%, 100% { transform: translate(0px, 0px); }
+      25%      { transform: translate(7px, 5px); }
+      50%      { transform: translate(-5px, -8px); }
+      75%      { transform: translate(-3px, 7px); }
+    }
+
+    @keyframes float2D4 {
+      0%, 100% { transform: translate(0px, 0px); }
+      25%      { transform: translate(-8px, -4px); }
+      50%      { transform: translate(6px, 6px); }
+      75%      { transform: translate(3px, -9px); }
+    }
+
+    @keyframes float2D5 {
+      0%, 100% { transform: translate(0px, 0px); }
+      25%      { transform: translate(6px, -7px); }
+      50%      { transform: translate(-7px, 5px); }
+      75%      { transform: translate(-2px, -6px); }
+    }
+
+    .mood-btn[data-mood="悶悶不樂"] { background: #e0f2fe; color: #0369a1; border-color: #bae6fd; }
+    .mood-btn[data-mood="易怒、注意力不集中"] { background: #fef3c7; color: #b45309; border-color: #fde68a; }
+    .mood-btn[data-mood="心情低落"] { background: #f3e8ff; color: #7e22ce; border-color: #e9d5ff; }
+    .mood-btn[data-mood="緊張、焦慮、壓力沉重"] { background: #fee2e2; color: #b91c1c; border-color: #fecaca; }
+    .mood-btn[data-mood="煩躁、疲憊"] { background: #dcfce7; color: #15803d; border-color: #bbf7d0; }
+
+    .mood-btn:hover {
+      filter: brightness(0.95);
+      animation-play-state: paused;
+    }
+
+    .mood-btn.active {
+      background: #1e293b !important;
+      color: #ffffff !important;
+      border-color: #1e293b !important;
+      animation: none !important;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(30, 41, 59, 0.25);
+    }
+
+    #results { margin-top: 28px; }
+
+    .hint {
+      color: #64748b;
+      background: #f8fafc;
+      padding: 24px;
+      border-radius: 20px;
+      text-align: center;
+      border: 2px dashed #cbd5e1;
+      font-size: 1rem;
+    }
+
+    .tea-card {
+      margin-top: 20px;
+      padding: 28px;
+      border: 1px solid rgba(226, 232, 240, 0.8);
+      border-radius: 24px;
+      background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+      animation: fadeIn 0.4s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .tea-header {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    @media (min-width: 600px) {
+      .tea-header {
+        flex-direction: row;
+        align-items: center;
+      }
+    }
+
+    .tea-image-container {
+      flex-shrink: 0;
+      width: 100%;
+      height: 180px;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08);
+      background-color: #f1f5f9;
+    }
+
+    @media (min-width: 600px) {
+      .tea-image-container {
+        width: 180px;
+        height: 140px;
+      }
+    }
+
+    .tea-image-container img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .tea-title-area h2 {
+      margin: 0 0 6px;
+      color: #1e293b;
+      font-size: 1.4rem;
+    }
+
+    .tea-title-area p {
+      margin: 0;
+      color: #64748b;
+      font-size: 0.95rem;
+    }
+
+    .infographics-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin: 20px 0;
+    }
+
+    @media (min-width: 500px) {
+      .infographics-grid {
+        grid-template-columns: repeat(4, 1fr);
+      }
+    }
+
+    .info-badge {
+      background: #f1f5f9;
+      border-radius: 14px;
+      padding: 12px;
+      text-align: center;
+      border: 1px solid #e2e8f0;
+    }
+
+    .info-badge .icon {
+      font-size: 1.2rem;
+      margin-bottom: 4px;
+    }
+
+    .info-badge .label {
+      font-size: 0.75rem;
+      color: #64748b;
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    .info-badge .value {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #1e293b;
+    }
+
+    .recipe-box {
+      background: #fdf4f0;
+      border-left: 4px solid #f97316;
+      padding: 14px 18px;
+      border-radius: 0 12px 12px 0;
+      margin-top: 16px;
+    }
+
+    .recipe-box p {
+      margin: 0;
+      color: #9a3412;
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+
+    .encourage-box {
+      background: #f0fdf4;
+      border-left: 4px solid #22c55e;
+      padding: 14px 18px;
+      border-radius: 0 12px 12px 0;
+      margin-top: 12px;
+    }
+
+    .encourage-box p {
+      margin: 0;
+      color: #15803d;
+      font-size: 0.95rem;
+      line-height: 1.6;
+      font-weight: 600;
+    }
+
+    .notice {
+      margin-top: 36px;
+      padding-top: 18px;
+      border-top: 1px solid #e2e8f0;
+      color: #94a3b8;
+      font-size: 0.88rem;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="panel">
+      <h1>🍵 今日茶飲推薦</h1>
+      <p class="intro">
+        點擊下方心情按鈕，查看專屬療癒茶飲、沖泡小百科與詳細配方圖表。
+      </p>
+
+      <label>請選擇今日的心情：</label>
+      <div class="mood-group" id="moodGroup">
+        <button type="button" class="mood-btn" data-mood="悶悶不樂" onclick="selectMood('悶悶不樂', this)">悶悶不樂</button>
+        <button type="button" class="mood-btn" data-mood="易怒、注意力不集中" onclick="selectMood('易怒、注意力不集中', this)">易怒、注意力不集中</button>
+        <button type="button" class="mood-btn" data-mood="心情低落" onclick="selectMood('心情低落', this)">心情低落</button>
+        <button type="button" class="mood-btn" data-mood="緊張、焦慮、壓力沉重" onclick="selectMood('緊張、焦慮、壓力沉重', this)">緊張、焦慮、壓力沉重</button>
+        <button type="button" class="mood-btn" data-mood="煩躁、疲憊" onclick="selectMood('煩躁、疲憊', this)">煩躁、疲憊</button>
+      </div>
+
+      <section id="results" aria-live="polite">
+        <p class="hint">✨ 請點擊上方心情按鈕以載入infographics圖表</p>
+      </section>
+
+      <p class="notice">
+        提示：以上是茶飲配方介紹，並非藥物或醫療建議；
+        如有健康問題，請向醫護專業人士查詢。
+      </p>
+    </section>
+  </main>
+
+  <script>
+    const teas = [
+      {
+        name: "玫瑰蘋果舒壓茶",
+        ingredients: "乾玫瑰花（2朵）、蘋果乾（2片）、紅棗乾（1顆）",
+        benefit: "疏肝解鬱、溫潤安神",
+        mood: "悶悶不樂",
+        temp: "85°C 溫水",
+        time: "5-8 分鐘",
+        caffeine: "無咖啡因",
+        flavor: "花果微甜",
+        image: "https://images.unsplash.com/photo-1576092768241-dec231879fc3?auto=format&fit=crop&w=600&q=80",
+        encouragement: "🌟 給悶悶不樂的你：別讓一時的陰霾遮住了你的光芒，喝口花果茶，喝下溫柔，慢慢找回屬於你的燦爛微笑吧！"
+      },
+      {
+        name: "明目洛神杞子茶",
+        ingredients: "洛神花（1小片）、杞子（6–8粒）、蘋果乾（1–2片）、甜菊葉（1小片）",
+        benefit: "保護眼睛、抗疲勞/補足元氣",
+        mood: "易怒、注意力不集中",
+        temp: "90°C 熱水",
+        time: "6-10 分鐘",
+        caffeine: "無咖啡因",
+        flavor: "酸甜清爽",
+        image: "https://images.unsplash.com/photo-1556679343-c7306c1976bc?auto=format&fit=crop&w=600&q=80",
+        encouragement: "💡 給疲憊靜不下的你：讀書辛苦了，眼睛休息一下！酸甜的茶香會幫你清空煩躁，重拾專注的能量！"
+      },
+      {
+        name: "英式玫瑰蘋果紅茶",
+        ingredients: "紅茶葉（1小匙）、乾玫瑰花（2朵）、蘋果乾（2片）",
+        benefit: "提神醒腦、溫胃消食、愉悅心情",
+        mood: "心情低落",
+        temp: "95°C 沸水",
+        time: "3-5 分鐘",
+        caffeine: "中咖啡因",
+        flavor: "醇厚茶香",
+        image: "https://images.unsplash.com/photo-1594631252845-29fc4cc8cde9?auto=format&fit=crop&w=600&q=80",
+        encouragement: "🌈 給心情低落的你：允許自己偶爾有低潮，這只是蓄力的一部分。這杯熱紅茶能撫平心緒，加油，你遠比想像中優秀！"
+      },
+      {
+        name: "莓果舒壓茶",
+        ingredients: "乾玫瑰花（2朵）、蘋果乾（2片）、洛神花（1小片）",
+        benefit: "養顏美容、促進代謝、放鬆心情",
+        mood: "緊張、焦慮、壓力沉重",
+        temp: "85°C 溫水",
+        time: "5-7 分鐘",
+        caffeine: "無咖啡因",
+        flavor: "果香濃郁",
+        image: "https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=600&q=80",
+        encouragement: "💙 給壓力沉重的你：深呼吸，把肩上的負擔暫時放下來。一步一步穩紮穩打，你一定可以順利過關的！"
+      },
+      {
+        name: "夏日沁靈茶",
+        ingredients: "乾薄荷葉（1小匙）、檸檬乾（1片）、甜菊葉（1小片）",
+        benefit: "清熱消暑、醒腦開胃、舒緩頭痛",
+        mood: "煩躁、疲憊",
+        temp: "80°C 溫水",
+        time: "3-5 分鐘",
+        caffeine: "無咖啡因",
+        flavor: "清涼薄荷",
+        image: "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?auto=format&fit=crop&w=600&q=80",
+        encouragement: "🍃 給感到煩躁疲憊的你：薄荷的清涼會驅散所有心煩意亂，給大腦補滿氧氣，休息片刻後再精神滿滿地出發吧！"
+      }
+    ];
+
+    function selectMood(selectedMood, btnElement) {
+      const moodButtons = document.querySelectorAll(".mood-btn");
+      moodButtons.forEach(b => b.classList.remove("active"));
+      btnElement.classList.add("active");
+
+      const results = document.getElementById("results");
+      const recommendations = teas.filter(tea => tea.mood === selectedMood);
+
+      if (recommendations.length === 0) {
+        results.innerHTML = `<p class="hint">暫時找不到符合 "${selectedMood}" 的茶飲。</p>`;
+        return;
+      }
+
+      results.innerHTML = '<h2 style="color: #1e293b; margin-bottom: 16px;">📊 專屬茶飲圖表與指南</h2>' + recommendations.map(tea => `
+        <article class="tea-card">
+          <div class="tea-header">
+            <div class="tea-image-container">
+              <img src="${tea.image}" alt="${tea.name}" loading="lazy" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1576092768241-dec231879fc3?auto=format&fit=crop&w=600&q=80';">
+            </div>
+            <div class="tea-title-area">
+              <h2>${tea.name}</h2>
+              <p><strong>🎯 核心功效：</strong>${tea.benefit}</p>
+              <p><strong>💡 當前心情：</strong>${selectedMood}</p>
+            </div>
+          </div>
+
+          <div class="infographics-grid">
+            <div class="info-badge">
+              <div class="icon">🌡️</div>
+              <span class="label">建議水溫</span>
+              <span class="value">${tea.temp}</span>
+            </div>
+            <div class="info-badge">
+              <div class="icon">⏱️</div>
+              <span class="label">沖泡時間</span>
+              <span class="value">${tea.time}</span>
+            </div>
+            <div class="info-badge">
+              <div class="icon">☕</div>
+              <span class="label">咖啡因</span>
+              <span class="value">${tea.caffeine}</span>
+            </div>
+            <div class="info-badge">
+              <div class="icon">✨</div>
+              <span class="label">風味特色</span>
+              <span class="value">${tea.flavor}</span>
+            </div>
+          </div>
+
+          <div class="recipe-box">
+            <p><strong>🌿 黃金比例配方：</strong>${tea.ingredients}</p>
+          </div>
+
+          <div class="encourage-box">
+            <p>${tea.encouragement}</p>
+          </div>
+        </article>
+      `).join("");
+    }
+  </script>
+</body>
+</html>
